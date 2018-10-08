@@ -8,12 +8,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// undefineCmd represents the undefine command
-var undefineCmd = &cobra.Command{
-	Use:   "undefine",
-	Short: "Undefine a VM by removing its specification",
-	Long: `Undefine a VM by removing its specification. Its image is not affected.
-If it's running, the domain is first stopped.'`,
+var purgeCmd = &cobra.Command{
+	Use:   "purge",
+	Short: "Fully destroy a VM by undefining it and removing its image",
+	Long:  `Fully destroy a domain by undefining it and removing its image`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		guest, err := cmd.Flags().GetString("guest")
 		if err != nil {
@@ -33,11 +31,15 @@ If it's running, the domain is first stopped.'`,
 		if err := virgo.Undefine(l, guest); err != nil {
 			return fmt.Errorf("failed to undefine %s: %v", guest, err)
 		}
+
+		if err := virgo.Purge(l, guest); err != nil {
+			return fmt.Errorf("failed to purge %s: %v", guest, err)
+		}
 		return nil
 	},
 }
 
 func init() {
-	undefineCmd.Flags().StringP("guest", "g", "", "guest to undefine")
-	rootCmd.AddCommand(undefineCmd)
+	purgeCmd.Flags().StringP("guest", "g", "", "guest to purge")
+	rootCmd.AddCommand(purgeCmd)
 }

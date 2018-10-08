@@ -1,0 +1,40 @@
+#cloud-config
+users:
+  - name: %s
+    lock_passwd: false
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    # this is the outcome of the command openssl passwd -1 -salt SaltSalt $PASSWORD
+    passwd: %s
+
+write_files:
+- path: /provision.sh
+  content: |
+    %s
+
+
+- path: /remove_cloud_init.sh
+  content: |
+    #!/usr/bin/env bash
+    echo 'datasource_list: [ None ]' | sudo -s tee /etc/cloud/cloud.cfg.d/90_dpkg.cfg
+    sudo apt-get purge -y cloud-init
+    sudo rm -rf /etc/cloud/; sudo rm -rf /var/lib/cloud/
+
+
+password: %s
+chpasswd: { expire: False }
+ssh_pwauth: True
+
+# upgrade packages on startup
+package_upgrade: true
+
+#run 'apt-get upgrade' or yum equivalent on first boot
+apt_upgrade: true
+
+runcmd:
+  - bash /provision.sh
+  - bash /remove_cloud_init.sh
+  - shutdown
+
+power_state:
+  mode: reboot

@@ -1,36 +1,70 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
-
+	"github.com/anastop/virgo/pkg/virgo"
 	"github.com/spf13/cobra"
+	"io/ioutil"
+	"log"
 )
 
-// launchCmd represents the launch command
 var launchCmd = &cobra.Command{
 	Use:   "launch",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Define and start a new VM instance",
+	Long: `Define and start a new VM instance based on user-provided launch options.
+The VM's image should have been already provisioned using the 'provision' command.
+Any previous specification of the VM is overriden by the new launch options. 
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("launch called")
+The available launch options are presented in detail in virgo's main help message.
+`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		guest, err := cmd.Flags().GetString("guest")
+		if err != nil {
+			return fmt.Errorf("failed to parse 'guest' argument: %v", err)
+		}
+
+		conf, err := cmd.Flags().GetString("config")
+		if err != nil {
+			return fmt.Errorf("failed to parse config argument: %v", err)
+		}
+
+		data, err := ioutil.ReadFile(conf)
+		if err != nil {
+			return fmt.Errorf("failed to read config file %s: %v", conf, err)
+		}
+
+		gc := &virgo.GuestConf{}
+		if err := json.Unmarshal(data, gc); err != nil {
+			return fmt.Errorf("failed to unmarshal guest config: %v", err)
+		}
+		gc.Name = guest
+
+		l, err := virgo.NewLibvirtConn()
+		if err != nil {
+			return fmt.Errorf("failed to open Libvirt connection: %v", err)
+		}
+		defer func() {
+			if err := l.Disconnect(); err != nil {
+				log.Fatalf("failed to disconnect from Libvirt: %v", err)
+			}
+		}()
+
+		gc.RootImgPath, gc.ConfigIsoPath, err = virgo.GuestImagePaths(l, virgo.DefaultPool(), guest)
+		if err != nil {
+			return fmt.Errorf("failed to compute image paths for %s: %v", guest, err)
+		}
+
+		if err := virgo.LaunchGuest(l, gc); err != nil {
+			return fmt.Errorf("launch failed: %v", err)
+		}
+
+		return nil
 	},
 }
 
 func init() {
+	launchCmd.Flags().StringP("guest", "g", "", "guest to launch")
+	launchCmd.Flags().StringP("config", "c", "", "JSON file containing the launch options")
 	rootCmd.AddCommand(launchCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// launchCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// launchCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

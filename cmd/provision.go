@@ -1,33 +1,82 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/anastop/virgo/pkg/virgo"
+	"io/ioutil"
+	"log"
 
 	"github.com/spf13/cobra"
 )
 
-// provisionCmd represents the provision command
 var provisionCmd = &cobra.Command{
 	Use:   "provision",
 	Short: "Provision a new VM image",
-	Long: `Provision a new VM image based on A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Long: `Provision a new VM image based on a user-provided provision bash script and provisioning options.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+The available provisioning options are presented in detail in virgo's main help message. 
+The bash script can be any valid bash script and is executed with root permissions. 
+`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		name, err := cmd.Flags().GetString("name")
+		guest, err := cmd.Flags().GetString("guest")
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to parse 'guest' argument: %v", err)
 		}
 
-		fmt.Printf("provision called for %s", name)
+		scriptFile, err := cmd.Flags().GetString("script")
+		if err != nil {
+			return fmt.Errorf("failed to parse script argument: %v", err)
+		}
+
+		conf, err := cmd.Flags().GetString("config")
+		if err != nil {
+			return fmt.Errorf("failed to parse config argument: %v", err)
+		}
+
+		data, err := ioutil.ReadFile(conf)
+		if err != nil {
+			return fmt.Errorf("failed to read config file %s: %v", conf, err)
+		}
+
+		pc := &virgo.ProvisionConf{}
+		if err := json.Unmarshal(data, pc); err != nil {
+			return fmt.Errorf("failed to unmarshal provision config: %v", err)
+		}
+
+		gc := &virgo.GuestConf{}
+		if err := json.Unmarshal(data, gc); err != nil {
+			return fmt.Errorf("failed to unmarshal guest config: %v", err)
+		}
+		gc.Name = guest
+
+		data, err = ioutil.ReadFile(scriptFile)
+		if err != nil {
+			return fmt.Errorf("failed to read provision script %s: %v", scriptFile, err)
+		}
+		pc.Provision = string(data)
+
+		l, err := virgo.NewLibvirtConn()
+		if err != nil {
+			return fmt.Errorf("failed to open Libvirt connection: %v", err)
+		}
+		defer func() {
+			if err := l.Disconnect(); err != nil {
+				log.Fatalf("failed to disconnect from Libvirt: %v", err)
+			}
+		}()
+
+		if err := virgo.Provision(l, pc, gc); err != nil {
+			return fmt.Errorf("provision failed: %v", err)
+		}
+
 		return nil
 	},
 }
 
 func init() {
-	provisionCmd.Flags().StringP("name", "n", "", "VM image name")
+	provisionCmd.Flags().StringP("guest", "g", "", "guest to provision")
+	provisionCmd.Flags().StringP("script", "s", "", "bash script to be used for provisioning")
+	provisionCmd.Flags().StringP("config", "c", "", "JSON file containing the provisioning options")
 	rootCmd.AddCommand(provisionCmd)
 }
