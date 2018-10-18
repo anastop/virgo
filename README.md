@@ -2,6 +2,8 @@
 
 Flexible provisioning and management of virtual machines 
 
+![virgo](./virgo.png)
+
 Features:
 - runs on Linux baremetal machines, using Libvirt under the hood
 - allows easy VM provisioning, based on user-provided Bash script and simple JSON configuration (uses [cloud-init](https://cloudinit.readthedocs.io/en/latest/) under the hood)
