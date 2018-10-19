@@ -4,23 +4,34 @@ Flexible provisioning and management of virtual machines
 
 ![virgo](./virgo.png)
 
-Features:
-- runs on Linux baremetal machines, using Libvirt under the hood
-- allows easy VM provisioning, based on user-provided Bash script and simple JSON configuration (uses [cloud-init](https://cloudinit.readthedocs.io/en/latest/) under the hood)
-- allows easy VM creation with rich configuration options
-- supports [vhost-user network interfaces](https://libvirt.org/formatdomain.html#elementVhostuser), to allow a VM to be connected to e.g. a DPDK-based switch
+## Features
 
-VM provisioning options: 
-- `cloud_img_url`, `cloud_img_name`: cloud image to use for provisioning
-- `user`, `passwd`: user credentials to provision within the VM
-- `root_img_gb`: provisioned image size
+- Runs on Linux baremetal machines and leverages Libvirt
+- Allows easy VM provisioning based on user-provided provisioning scripts and simple configuration options (uses [cloud-init](https://cloudinit.readthedocs.io/en/latest/) under the hood)
+- Allows easy VM creation with flexible configuration options
+- Supports [vhost-user network interfaces](https://libvirt.org/formatdomain.html#elementVhostuser), to allow a VM to connect e.g. with a  DPDK-based vswitch
 
-VM launching options: 
-- `guest_memory_mb`: guest memory size
-- `guest_num_vcpus`: guest number of vCPUs
-- `guest_hugepage_support`, `guest_hugepage_size`, `guest_hugepage_size_unit`, `guest_hugepage_node_set`: hugepage backing options
-- `guest_net_ifs`: network interfaces configuration
-    - "bridge" interfaces (config options: `bridge`)
-    - "vhostuser" interfaces (config options: `mac_addr`, `unix_socket_path`, `queues`)
+Provisioning options: 
+- cloud image used for provisioning (currently tested with Ubuntu 16.04)
+- user credentials
+
+VM configuration options: 
+- number of vCPUs
+- guest memory
+- hugepage backing options
+- network interfaces: support for `bridge`-type and `vhostuser`-type interfaes
+
+## Installation
+
+```console
+$ go get github.com/anastop/virgo
+$ go install
+```
+
+## Usage 
+
+```console
+$ virgo --help
+```
 
 
