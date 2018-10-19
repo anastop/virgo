@@ -36,6 +36,18 @@ virgo makes use of the following utilities:
 
 ## Usage 
 
+Provision a new VM called "foo":
+```console
+$ sudo virgo --config guest_config.json --script provision.sh --guest foo
+```
+"foo" will shutdown after provisioning. 
+
+Edit `guest_config.json` to change VM's parameters (e.g. #vCPUs), and launch "foo":
+```console
+$ sudo virgo --config guest_config.json --guest foo
+```
+
+Usage:
 ```console
 $ virgo --help
 
