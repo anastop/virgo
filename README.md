@@ -19,7 +19,7 @@ VM configuration options:
 - number of vCPUs
 - guest memory
 - hugepage backing options
-- network interfaces: support for `bridge`-type and `vhostuser`-type interfaes
+- network interfaces: support for `bridge`-type and `vhostuser`-type interfaces
 
 ## Installation
 
