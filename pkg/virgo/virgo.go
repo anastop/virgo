@@ -34,11 +34,11 @@ write_files:
   content: |
     {{.Provision | indentByFour }}
     
-{{if ne .Initd "" }}
+{{- if ne .Initd "" }}
 - path: /etc/init.d/{{.Name}}
   content: |
     {{.Initd | indentByFour }}
-{{end}}
+{{- end}}
 
 - path: /remove_cloud_init.sh 
   content: |
@@ -60,52 +60,10 @@ apt_upgrade: true
 
 runcmd:
   - bash /provision.sh
-{{if ne .Initd "" }}
+{{- if ne .Initd "" }}  
   - chmod +x /etc/init.d/{{.Name}}
   - update-rc.d {{.Name}} defaults
-{{end}}
-  - bash /remove_cloud_init.sh
-  - shutdown
-
-power_state:
-  mode: reboot
-`
-
-var userDataFmt = `#cloud-config
-users:
-  - name: %s
-    lock_passwd: false
-    sudo: ALL=(ALL) NOPASSWD:ALL
-    shell: /bin/bash
-    # this is the outcome of the command openssl passwd -1 -salt SaltSalt $PASSWORD
-    passwd: %s
-
-write_files: 
-- path: /provision.sh
-  content: |
-    %s
-    
-
-- path: /remove_cloud_init.sh 
-  content: |
-    #!/usr/bin/env bash
-    echo 'datasource_list: [ None ]' | sudo -s tee /etc/cloud/cloud.cfg.d/90_dpkg.cfg
-    sudo apt-get purge -y cloud-init
-    sudo rm -rf /etc/cloud/; sudo rm -rf /var/lib/cloud/
-
-
-password: %s
-chpasswd: { expire: False }
-ssh_pwauth: True
-
-# upgrade packages on startup
-package_upgrade: true
-
-#run 'apt-get upgrade' or yum equivalent on first boot
-apt_upgrade: true
-
-runcmd:
-  - bash /provision.sh
+{{- end}}  
   - bash /remove_cloud_init.sh
   - shutdown
 
@@ -185,7 +143,7 @@ func createUserDataFile(path string, p *ProvisionConf) error {
 
 	s, err := userData(p)
 	if err != nil {
-		return fmt.Errorf("faile to create user-data string from config %+v: %v", p, err)
+		return fmt.Errorf("failed to create user-data string from config %+v: %v", p, err)
 	}
 
 	if err := ioutil.WriteFile(path, []byte(s), 0644); err != nil {
@@ -243,13 +201,13 @@ var domTmpl = `
   	<currentMemory unit='MiB'>{{.MemoryMB}}</currentMemory>
 
 	<!-- hugepages -->
-	{{if .HugepageSupport}}
+	{{- if .HugepageSupport}}
 	<memoryBacking>
 	<hugepages>
 		<page size='{{.HugepageSize}}' unit='{{.HugepageSizeUnit}}' nodeset='{{.HugepageNodeSet}}'/>
 	</hugepages>
 	</memoryBacking>
-	{{end}}
+	{{- end}}
 
 	<vcpu placement='static'>{{.NumVcpus}}</vcpu>
 	<!-- cputune><shares>4096</shares>
@@ -423,7 +381,7 @@ func createVolumes(l *libvirt.Libvirt, c *ProvisionConf) (rootImgPath, configIso
 	}
 
 	if err := createConfigIsoImage(ConfigIsoName(c.Name), c); err != nil {
-		e = fmt.Errorf("failed to create configuration iso image %s: %v", ConfigIsoName, err)
+		e = fmt.Errorf("failed to create configuration iso image %s: %v", ConfigIsoName(c.Name), err)
 		return
 	}
 
@@ -450,7 +408,7 @@ func createVolumes(l *libvirt.Libvirt, c *ProvisionConf) (rootImgPath, configIso
 
 	vol, err := l.StorageVolLookupByName(pool, RootImgName(c.Name))
 	if err != nil {
-		e = fmt.Errorf("failed to lookup storage volume %s under pool %s: %v", RootImgName, pool.Name, err)
+		e = fmt.Errorf("failed to lookup storage volume %s under pool %s: %v", RootImgName(c.Name), pool.Name, err)
 		return
 	}
 
