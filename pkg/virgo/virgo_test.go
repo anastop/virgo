@@ -12,8 +12,8 @@ func TestDomXMLStr(t *testing.T) {
 		HugepageSize:     2,
 		HugepageSizeUnit: "MB",
 		HugepageNodeSet:  "0",
-		rootImgPath:      "foo.img",
-		configIsoPath:    "foo.iso",
+		RootImgPath:      "foo.img",
+		ConfigIsoPath:    "foo.iso",
 		NetIfs: []NetIf{
 			{Type: "bridge", Bridge: "virbr0"},
 			{Type: "bridge", Bridge: "virbr0"},
@@ -32,11 +32,28 @@ func TestDomXMLStr(t *testing.T) {
 		},
 	}
 
-	t.Logf("Domain XML string: %s", domXMLStr("foo", s))
+	xml, err := domXML(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("Domain XML string: %s", xml)
 }
 
 func TestCreateUserDataFile(t *testing.T) {
-	if err := createUserDataFile("user-data", "nfvsap", "nfvsap", "echo hello\nls *"); err != nil {
+	p := &ProvisionConf{Name: "test",
+		CloudImgURL:  "https://cloud-images.ubuntu.com/releases/16.04/release/",
+		CloudImgName: "ubuntu-16.04-server-cloudimg-amd64-disk1.img",
+		User:         "nfvsap",
+		Passwd:       "nfvsap",
+	}
+
+	p.Provision = `#/bin/bash
+echo Hello
+echo Hello again`
+
+	p.Initd = p.Provision
+
+	if err := createUserDataFile("user-data", p); err != nil {
 		t.Fatal(err)
 	}
 }
