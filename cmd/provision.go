@@ -24,12 +24,12 @@ The bash script can be any valid bash script and is executed with root permissio
 			return fmt.Errorf("failed to parse 'guest' argument: %v", err)
 		}
 
-		provisionScript, err := cmd.Flags().GetString("provision")
+		provisionScript, err := cmd.Flags().GetString("provision-script")
 		if err != nil {
 			return fmt.Errorf("failed to parse provision argument: %v", err)
 		}
 
-		initdScript, err := cmd.Flags().GetString("initd")
+		initdScript, err := cmd.Flags().GetString("initd-script")
 		if err != nil {
 			return fmt.Errorf("failed to parse initd argument: %v", err)
 		}
@@ -62,11 +62,14 @@ The bash script can be any valid bash script and is executed with root permissio
 		}
 		pc.Provision = string(data)
 
-		data, err = ioutil.ReadFile(initdScript)
-		if err != nil {
-			return fmt.Errorf("failed to read initd script %s: %v", initdScript, err)
+
+		if initdScript != "" {
+			data, err = ioutil.ReadFile(initdScript)
+			if err != nil {
+				return fmt.Errorf("failed to read initd script %s: %v", initdScript, err)
+			}
+			pc.Initd = string(data)
 		}
-		pc.Initd = string(data)
 
 		l, err := virgo.NewLibvirtConn()
 		if err != nil {
@@ -88,8 +91,10 @@ The bash script can be any valid bash script and is executed with root permissio
 
 func init() {
 	provisionCmd.Flags().StringP("guest", "g", "", "guest to provision")
-	provisionCmd.Flags().StringP("provision", "p", "", "bash script to be used for provisioning")
-	provisionCmd.Flags().StringP("initd", "i", "", "bash script to be used in init.d")
+	provisionCmd.Flags().StringP("provision-script", "p", "", "bash script to be used for provisioning")
+	provisionCmd.Flags().StringP("initd-script", "i", "", "bash script to be used in init.d")
 	provisionCmd.Flags().StringP("config", "c", "", "JSON file containing the provisioning options")
+	provisionCmd.MarkFlagRequired("config")
+	provisionCmd.MarkFlagRequired("guest")
 	rootCmd.AddCommand(provisionCmd)
 }
