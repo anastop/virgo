@@ -26,10 +26,13 @@ VM configuration options:
 
 ## Installation
 
+You can build virgo from source:
 ```console
 $ go get github.com/anastop/virgo
 $ go install
 ```
+
+Or download the latest binary from the "Releases" page.
 
 ### Dependencies
 
