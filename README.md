@@ -1,6 +1,7 @@
 # virgo
 
-Flexible provisioning and management of virtual machines 
+virgo allows you to quickly provision and spin VMs locally, leveraging cloud-init and
+Libvirt.
 
 ![virgo](./virgo.png)
 
@@ -11,9 +12,11 @@ Flexible provisioning and management of virtual machines
 - Allows easy VM creation with flexible configuration options
 - Supports [vhost-user network interfaces](https://libvirt.org/formatdomain.html#elementVhostuser), to allow a VM to connect e.g. with a  DPDK-based vswitch
 
-Provisioning options: 
+Provisioning options:
 - cloud image used for provisioning (currently tested with Ubuntu 16.04)
 - user credentials
+- custom provisioning script to be used during VM creation
+- custom init.d script to be installed permanently
 
 VM configuration options: 
 - number of vCPUs
@@ -38,7 +41,7 @@ virgo makes use of the following utilities:
 
 Provision a new VM called "foo":
 ```console
-$ sudo virgo --config guest_config.json --script provision.sh --guest foo
+$ sudo virgo provision --config guest_config.json --provision-script provision.sh --initd-script initd.sh --guest foo
 ```
 "foo" will shutdown after provisioning. 
 

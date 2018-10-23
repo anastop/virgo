@@ -41,5 +41,6 @@ var purgeCmd = &cobra.Command{
 
 func init() {
 	purgeCmd.Flags().StringP("guest", "g", "", "guest to purge")
+	purgeCmd.MarkFlagRequired("guest")
 	rootCmd.AddCommand(purgeCmd)
 }
