@@ -18,23 +18,27 @@ import (
 
 var metaDataFmt = `
 instance-id: iid-%s;
-#hostname: %s
-#local-hostname: %s`
+`
 
-var userDataFmt = `#cloud-config
+var userDataTmpl = `#cloud-config
 users:
-  - name: %s
+  - name: {{.User}}
     lock_passwd: false
     sudo: ALL=(ALL) NOPASSWD:ALL
     shell: /bin/bash
     # this is the outcome of the command openssl passwd -1 -salt SaltSalt $PASSWORD
-    passwd: %s
+    passwd: {{.PasswdHash}}
 
 write_files: 
 - path: /provision.sh
   content: |
-    %s
+    {{.Provision | indentByFour }}
     
+{{- if ne .Initd "" }}
+- path: /etc/init.d/{{.Name}}
+  content: |
+    {{.Initd | indentByFour }}
+{{- end}}
 
 - path: /remove_cloud_init.sh 
   content: |
@@ -44,7 +48,7 @@ write_files:
     sudo rm -rf /etc/cloud/; sudo rm -rf /var/lib/cloud/
 
 
-password: %s
+#password: {{.Passwd}}
 chpasswd: { expire: False }
 ssh_pwauth: True
 
@@ -56,6 +60,10 @@ apt_upgrade: true
 
 runcmd:
   - bash /provision.sh
+{{- if ne .Initd "" }}  
+  - chmod +x /etc/init.d/{{.Name}}
+  - update-rc.d {{.Name}} defaults
+{{- end}}  
   - bash /remove_cloud_init.sh
   - shutdown
 
@@ -64,12 +72,15 @@ power_state:
 `
 
 type ProvisionConf struct {
+	Name         string `json:"name"`
 	CloudImgURL  string `json:"cloud_img_url"`
 	CloudImgName string `json:"cloud_img_name"`
 	User         string `json:"user"`
 	Passwd       string `json:"passwd"`
 	RootImgGB    int    `json:"root_img_gb"`
 	Provision    string
+	Initd        string
+	PasswdHash   string
 }
 
 type NetIf struct {
@@ -94,23 +105,46 @@ type GuestConf struct {
 }
 
 func createMetaDataFile(path, guest string) error {
-	s := fmt.Sprintf(metaDataFmt, guest, guest, guest)
+	s := fmt.Sprintf(metaDataFmt, guest)
 	if err := ioutil.WriteFile(path, []byte(s), 0644); err != nil {
 		return err
 	}
 	return nil
 }
 
-func createUserDataFile(path, user, passwd, script string) error {
-	cmd := exec.Command("openssl", "passwd", "-1", "-salt", "SaltSalt", passwd)
-	hash, err := cmd.CombinedOutput()
+func indentByFour(s string) string {
+	return regexp.MustCompile("\n").ReplaceAllString(s, "\n    ")
+}
+
+func userData(p *ProvisionConf) (string, error) {
+	t, err := template.New("udtmpl").
+		Funcs(template.FuncMap{"indentByFour": indentByFour}).
+		Parse(userDataTmpl)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse template: %v", err)
+	}
+
+	var xml bytes.Buffer
+	if err := t.Execute(&xml, p); err != nil {
+		return "", fmt.Errorf("failed to execute template: %v", err)
+	}
+
+	return xml.String(), nil
+}
+
+func createUserDataFile(path string, p *ProvisionConf) error {
+	cmd := exec.Command("openssl", "passwd", "-1", "-salt", "SaltSalt", p.Passwd)
+	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to executed %v: %v", cmd.Args, err)
 	}
 
-	re := regexp.MustCompile("\n")
-	indentedScript := re.ReplaceAllString(script, "\n    ")
-	s := fmt.Sprintf(userDataFmt, user, hash, indentedScript, passwd)
+	p.PasswdHash = string(out)
+
+	s, err := userData(p)
+	if err != nil {
+		return fmt.Errorf("failed to create user-data string from config %+v: %v", p, err)
+	}
 
 	if err := ioutil.WriteFile(path, []byte(s), 0644); err != nil {
 		return err
@@ -118,16 +152,15 @@ func createUserDataFile(path, user, passwd, script string) error {
 	return nil
 }
 
-func createConfigIsoImage(path, guest, user, passwd, prov string) error {
-	var metaDataPath = "meta-data"
-	var userDataPath = "user-data"
-
-	if err := createMetaDataFile(metaDataPath, guest); err != nil {
+func createConfigIsoImage(path string, p *ProvisionConf) error {
+	userDataPath := "user-data"
+	metaDataPath := "meta-data"
+	if err := createMetaDataFile(metaDataPath, p.Name); err != nil {
 		return fmt.Errorf("failed to create meta-data file for cloud-init: %v", err)
 	}
 	//defer os.Remove(metaDataPath)
 
-	if err := createUserDataFile(userDataPath, user, passwd, prov); err != nil {
+	if err := createUserDataFile(userDataPath, p); err != nil {
 		return fmt.Errorf("failed to create user-data file for cloud-init: %v", err)
 	}
 	//defer os.Remove(userDataPath)
@@ -168,13 +201,13 @@ var domTmpl = `
   	<currentMemory unit='MiB'>{{.MemoryMB}}</currentMemory>
 
 	<!-- hugepages -->
-	{{if .HugepageSupport}}
+	{{- if .HugepageSupport}}
 	<memoryBacking>
 	<hugepages>
 		<page size='{{.HugepageSize}}' unit='{{.HugepageSizeUnit}}' nodeset='{{.HugepageNodeSet}}'/>
 	</hugepages>
 	</memoryBacking>
-	{{end}}
+	{{- end}}
 
 	<vcpu placement='static'>{{.NumVcpus}}</vcpu>
 	<!-- cputune><shares>4096</shares>
@@ -322,7 +355,7 @@ func GuestImagePaths(l *libvirt.Libvirt, poolName, guest string) (rootImgPath, c
 	return
 }
 
-func createVolumes(l *libvirt.Libvirt, guest string, c *ProvisionConf) (rootImgPath, configIsoPath string, e error) {
+func createVolumes(l *libvirt.Libvirt, c *ProvisionConf) (rootImgPath, configIsoPath string, e error) {
 	baseu, err := url.Parse(c.CloudImgURL)
 	if err != nil {
 		e = err
@@ -341,18 +374,18 @@ func createVolumes(l *libvirt.Libvirt, guest string, c *ProvisionConf) (rootImgP
 		return
 	}
 
-	rootImgPath, configIsoPath, err = GuestImagePaths(l, DefaultPool(), guest)
+	rootImgPath, configIsoPath, err = GuestImagePaths(l, DefaultPool(), c.Name)
 	if err != nil {
 		e = fmt.Errorf("failed to compute guest image paths: %v", err)
 		return
 	}
 
-	if err := createConfigIsoImage(ConfigIsoName(guest), guest, c.User, c.Passwd, c.Provision); err != nil {
-		e = fmt.Errorf("failed to create configuration iso image %s: %v", ConfigIsoName, err)
+	if err := createConfigIsoImage(ConfigIsoName(c.Name), c); err != nil {
+		e = fmt.Errorf("failed to create configuration iso image %s: %v", ConfigIsoName(c.Name), err)
 		return
 	}
 
-	if err := copyFile(ConfigIsoName(guest), configIsoPath); err != nil {
+	if err := copyFile(ConfigIsoName(c.Name), configIsoPath); err != nil {
 		e = fmt.Errorf("failed to copy configuration iso under storage pool's directory: %v", err)
 		return
 	}
@@ -373,9 +406,9 @@ func createVolumes(l *libvirt.Libvirt, guest string, c *ProvisionConf) (rootImgP
 		return
 	}
 
-	vol, err := l.StorageVolLookupByName(pool, RootImgName(guest))
+	vol, err := l.StorageVolLookupByName(pool, RootImgName(c.Name))
 	if err != nil {
-		e = fmt.Errorf("failed to lookup storage volume %s under pool %s: %v", RootImgName, pool.Name, err)
+		e = fmt.Errorf("failed to lookup storage volume %s under pool %s: %v", RootImgName(c.Name), pool.Name, err)
 		return
 	}
 
@@ -422,7 +455,7 @@ func ConfigIsoName(guest string) string {
 
 func Provision(l *libvirt.Libvirt, p *ProvisionConf, g *GuestConf) error {
 	var err error
-	g.RootImgPath, g.ConfigIsoPath, err = createVolumes(l, g.Name, p)
+	g.RootImgPath, g.ConfigIsoPath, err = createVolumes(l, p)
 	if err != nil {
 		return fmt.Errorf("failed to create volumes: %v", err)
 	}

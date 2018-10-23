@@ -39,5 +39,6 @@ If it's running, the domain is first stopped.'`,
 
 func init() {
 	undefineCmd.Flags().StringP("guest", "g", "", "guest to undefine")
+	undefineCmd.MarkFlagRequired("guest")
 	rootCmd.AddCommand(undefineCmd)
 }

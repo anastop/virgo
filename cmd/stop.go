@@ -37,5 +37,6 @@ var stopCmd = &cobra.Command{
 
 func init() {
 	stopCmd.Flags().StringP("guest", "g", "", "guest to stop")
+	stopCmd.MarkFlagRequired("guest")
 	rootCmd.AddCommand(stopCmd)
 }

@@ -39,5 +39,6 @@ either via 'provision' or 'launch'`,
 
 func init() {
 	startCmd.Flags().StringP("guest", "g", "", "guest to start")
+	startCmd.MarkFlagRequired("guest")
 	rootCmd.AddCommand(startCmd)
 }

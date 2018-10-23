@@ -24,9 +24,14 @@ The bash script can be any valid bash script and is executed with root permissio
 			return fmt.Errorf("failed to parse 'guest' argument: %v", err)
 		}
 
-		scriptFile, err := cmd.Flags().GetString("script")
+		provisionScript, err := cmd.Flags().GetString("provision-script")
 		if err != nil {
-			return fmt.Errorf("failed to parse script argument: %v", err)
+			return fmt.Errorf("failed to parse provision argument: %v", err)
+		}
+
+		initdScript, err := cmd.Flags().GetString("initd-script")
+		if err != nil {
+			return fmt.Errorf("failed to parse initd argument: %v", err)
 		}
 
 		conf, err := cmd.Flags().GetString("config")
@@ -43,6 +48,7 @@ The bash script can be any valid bash script and is executed with root permissio
 		if err := json.Unmarshal(data, pc); err != nil {
 			return fmt.Errorf("failed to unmarshal provision config: %v", err)
 		}
+		pc.Name = guest
 
 		gc := &virgo.GuestConf{}
 		if err := json.Unmarshal(data, gc); err != nil {
@@ -50,11 +56,20 @@ The bash script can be any valid bash script and is executed with root permissio
 		}
 		gc.Name = guest
 
-		data, err = ioutil.ReadFile(scriptFile)
+		data, err = ioutil.ReadFile(provisionScript)
 		if err != nil {
-			return fmt.Errorf("failed to read provision script %s: %v", scriptFile, err)
+			return fmt.Errorf("failed to read provision script %s: %v", provisionScript, err)
 		}
 		pc.Provision = string(data)
+
+
+		if initdScript != "" {
+			data, err = ioutil.ReadFile(initdScript)
+			if err != nil {
+				return fmt.Errorf("failed to read initd script %s: %v", initdScript, err)
+			}
+			pc.Initd = string(data)
+		}
 
 		l, err := virgo.NewLibvirtConn()
 		if err != nil {
@@ -76,7 +91,10 @@ The bash script can be any valid bash script and is executed with root permissio
 
 func init() {
 	provisionCmd.Flags().StringP("guest", "g", "", "guest to provision")
-	provisionCmd.Flags().StringP("script", "s", "", "bash script to be used for provisioning")
+	provisionCmd.Flags().StringP("provision-script", "p", "", "bash script to be used for provisioning")
+	provisionCmd.Flags().StringP("initd-script", "i", "", "bash script to be used in init.d")
 	provisionCmd.Flags().StringP("config", "c", "", "JSON file containing the provisioning options")
+	provisionCmd.MarkFlagRequired("config")
+	provisionCmd.MarkFlagRequired("guest")
 	rootCmd.AddCommand(provisionCmd)
 }
