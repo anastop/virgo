@@ -12,11 +12,9 @@ var purgeCmd = &cobra.Command{
 	Use:   "purge",
 	Short: "Fully destroy a VM by undefining it and removing its image",
 	Long:  `Fully destroy a domain by undefining it and removing its image`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		guest, err := cmd.Flags().GetString("guest")
-		if err != nil {
-			return fmt.Errorf("failed to parse 'guest' argument: %v", err)
-		}
+		guest := args[0]
 
 		l, err := virgo.NewLibvirtConn()
 		if err != nil {
@@ -40,7 +38,5 @@ var purgeCmd = &cobra.Command{
 }
 
 func init() {
-	purgeCmd.Flags().StringP("guest", "g", "", "guest to purge")
-	purgeCmd.MarkFlagRequired("guest")
 	rootCmd.AddCommand(purgeCmd)
 }

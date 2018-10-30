@@ -14,11 +14,9 @@ var startCmd = &cobra.Command{
 	Long: `Create a new VM instance from an already existing specification.
 This implies that the VM should have been already launched at least once in the past, 
 either via 'provision' or 'launch'`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		guest, err := cmd.Flags().GetString("guest")
-		if err != nil {
-			return fmt.Errorf("failed to parse 'guest' argument: %v", err)
-		}
+		guest := args[0]
 
 		l, err := virgo.NewLibvirtConn()
 		if err != nil {
@@ -38,7 +36,5 @@ either via 'provision' or 'launch'`,
 }
 
 func init() {
-	startCmd.Flags().StringP("guest", "g", "", "guest to start")
-	startCmd.MarkFlagRequired("guest")
 	rootCmd.AddCommand(startCmd)
 }

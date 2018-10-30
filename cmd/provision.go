@@ -18,11 +18,9 @@ var provisionCmd = &cobra.Command{
 The available provisioning options are presented in detail in virgo's main help message. 
 The bash script can be any valid bash script and is executed with root permissions. 
 `,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		guest, err := cmd.Flags().GetString("guest")
-		if err != nil {
-			return fmt.Errorf("failed to parse 'guest' argument: %v", err)
-		}
+		guest := args[0]
 
 		provisionScript, err := cmd.Flags().GetString("provision-script")
 		if err != nil {
@@ -90,11 +88,9 @@ The bash script can be any valid bash script and is executed with root permissio
 }
 
 func init() {
-	provisionCmd.Flags().StringP("guest", "g", "", "guest to provision")
 	provisionCmd.Flags().StringP("provision-script", "p", "", "bash script to be used for provisioning")
 	provisionCmd.Flags().StringP("initd-script", "i", "", "bash script to be used in init.d")
 	provisionCmd.Flags().StringP("config", "c", "", "JSON file containing the provisioning options")
 	provisionCmd.MarkFlagRequired("config")
-	provisionCmd.MarkFlagRequired("guest")
 	rootCmd.AddCommand(provisionCmd)
 }

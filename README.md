@@ -44,13 +44,13 @@ virgo makes use of the following utilities:
 
 Provision a new VM called "foo":
 ```console
-$ sudo virgo provision --config guest_config.json --provision-script provision.sh --initd-script initd.sh --guest foo
+$ sudo virgo provision foo --config guest_config.json --provision-script provision.sh --initd-script initd.sh
 ```
 "foo" will shutdown after provisioning. 
 
 Edit `guest_config.json` to change VM's parameters (e.g. #vCPUs), and launch "foo":
 ```console
-$ sudo virgo --config guest_config.json --guest foo
+$ sudo virgo launch foo --config guest_config.json
 ```
 
 Usage:

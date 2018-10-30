@@ -18,11 +18,9 @@ Any previous specification of the VM is overriden by the new launch options.
 
 The available launch options are presented in detail in virgo's main help message.
 `,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		guest, err := cmd.Flags().GetString("guest")
-		if err != nil {
-			return fmt.Errorf("failed to parse 'guest' argument: %v", err)
-		}
+		guest := args[0]
 
 		conf, err := cmd.Flags().GetString("config")
 		if err != nil {
@@ -64,7 +62,6 @@ The available launch options are presented in detail in virgo's main help messag
 }
 
 func init() {
-	launchCmd.Flags().StringP("guest", "g", "", "guest to launch")
 	launchCmd.Flags().StringP("config", "c", "", "JSON file containing the launch options")
 	rootCmd.AddCommand(launchCmd)
 }
