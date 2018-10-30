@@ -12,11 +12,9 @@ var stopCmd = &cobra.Command{
 	Use:   "stop",
 	Short: "Shut down a running VM instance",
 	Long:  `Shut down a running VM instance. Keep its current definition intact.`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		guest, err := cmd.Flags().GetString("guest")
-		if err != nil {
-			return fmt.Errorf("failed to parse 'guest' argument: %v", err)
-		}
+		guest := args[0]
 
 		l, err := virgo.NewLibvirtConn()
 		if err != nil {
@@ -36,7 +34,5 @@ var stopCmd = &cobra.Command{
 }
 
 func init() {
-	stopCmd.Flags().StringP("guest", "g", "", "guest to stop")
-	stopCmd.MarkFlagRequired("guest")
 	rootCmd.AddCommand(stopCmd)
 }

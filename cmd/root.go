@@ -13,6 +13,9 @@ var rootCmd = &cobra.Command{
 	Short: "virgo enables easy provisioning, configuration and management of Libvirt guests",
 	Long: `virgo enables easy provisioning, configuration and management of Libvirt guests. 
 
+All virgo commands accept a single argument, the name of the VM they act upon. Every command
+has its own flags. 
+
 For provisioning a new VM image, you should specify a JSON config file with provisioning
 options, along with a provisioning script to be executed on image's first boot.
 

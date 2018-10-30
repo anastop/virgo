@@ -14,11 +14,9 @@ var undefineCmd = &cobra.Command{
 	Short: "Undefine a VM by removing its specification",
 	Long: `Undefine a VM by removing its specification. Its image is not affected.
 If it's running, the domain is first stopped.'`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		guest, err := cmd.Flags().GetString("guest")
-		if err != nil {
-			return fmt.Errorf("failed to parse 'guest' argument: %v", err)
-		}
+		guest := args[0]
 
 		l, err := virgo.NewLibvirtConn()
 		if err != nil {
@@ -38,7 +36,5 @@ If it's running, the domain is first stopped.'`,
 }
 
 func init() {
-	undefineCmd.Flags().StringP("guest", "g", "", "guest to undefine")
-	undefineCmd.MarkFlagRequired("guest")
 	rootCmd.AddCommand(undefineCmd)
 }
