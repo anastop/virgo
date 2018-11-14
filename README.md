@@ -29,7 +29,7 @@ VM configuration options:
 You can build virgo from source:
 ```console
 $ go get github.com/anastop/virgo
-$ go install
+$ cd $GOPATH/src/github.com/anastop/virgo && go install
 ```
 
 Or download the latest binary from the "Releases" page.
