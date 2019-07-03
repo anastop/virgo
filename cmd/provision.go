@@ -3,9 +3,10 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/anastop/virgo/pkg/virgo"
 	"io/ioutil"
 	"log"
+
+	"github.com/anastop/virgo/pkg/virgo"
 
 	"github.com/spf13/cobra"
 )
@@ -54,12 +55,13 @@ The bash script can be any valid bash script and is executed with root permissio
 		}
 		gc.Name = guest
 
-		data, err = ioutil.ReadFile(provisionScript)
-		if err != nil {
-			return fmt.Errorf("failed to read provision script %s: %v", provisionScript, err)
+		if provisionScript != "" {
+			data, err = ioutil.ReadFile(provisionScript)
+			if err != nil {
+				return fmt.Errorf("failed to read provision script %s: %v", provisionScript, err)
+			}
+			pc.Provision = string(data)
 		}
-		pc.Provision = string(data)
-
 
 		if initdScript != "" {
 			data, err = ioutil.ReadFile(initdScript)

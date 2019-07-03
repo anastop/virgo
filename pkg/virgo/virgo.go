@@ -30,10 +30,12 @@ users:
     passwd: {{.PasswdHash}}
 
 write_files: 
+{{- if ne .Provision ""}}	
 - path: /provision.sh
   content: |
     {{.Provision | indentByFour }}
-    
+{{- end}}	
+	
 {{- if ne .Initd "" }}
 - path: /etc/init.d/{{.Name}}
   content: |
@@ -59,7 +61,9 @@ package_upgrade: true
 apt_upgrade: true
 
 runcmd:
+{{- if ne .Provision "" }}
   - bash /provision.sh
+{{- end}}
 {{- if ne .Initd "" }}  
   - chmod +x /etc/init.d/{{.Name}}
   - update-rc.d {{.Name}} defaults
@@ -72,36 +76,46 @@ power_state:
 `
 
 type ProvisionConf struct {
-	Name         string `json:"name"`
-	CloudImgURL  string `json:"cloud_img_url"`
-	CloudImgName string `json:"cloud_img_name"`
-	User         string `json:"user"`
-	Passwd       string `json:"passwd"`
-	RootImgGB    int    `json:"root_img_gb"`
+	Name         string `json:"name,omitempty"`
+	CloudImgURL  string `json:"cloud_img_url,omitempty"`
+	CloudImgName string `json:"cloud_img_name,omitempty"`
+	User         string `json:"user,omitempty"`
+	Passwd       string `json:"passwd,omitempty"`
+	RootImgGB    int    `json:"root_img_gb,omitempty"`
 	Provision    string
 	Initd        string
 	PasswdHash   string
 }
 
 type NetIf struct {
-	Type           string `json:"type"`
-	Bridge         string `json:"bridge"`
-	MacAddr        string `json:"mac_addr"`
-	UnixSocketPath string `json:"unix_socket_path"`
-	Queues         int    `json:"queues"`
+	Type           string `json:"type,omitempty"`
+	Bridge         string `json:"bridge,omitempty"`
+	MacAddr        string `json:"mac_addr,omitempty"`
+	UnixSocketPath string `json:"unix_socket_path,omitempty"`
+	Queues         int    `json:"queues,omitempty"`
+}
+
+type NUMANode struct {
+	Id       int    `json:"id,omitempty"`
+	Cpus     string `json:"cpus,omitempty"`
+	MemoryMB int    `json:"memory_mb,omitempty"`
 }
 
 type GuestConf struct {
-	Name             string  `json:"name"`
-	RootImgPath      string  `json:"root_img_path"`
-	ConfigIsoPath    string  `json:"config_iso_path"`
-	MemoryMB         int     `json:"guest_memory_mb"`
-	NumVcpus         int     `json:"guest_num_vcpus"`
-	HugepageSupport  bool    `json:"guest_hugepage_support"`
-	HugepageSize     int     `json:"guest_hugepage_size"`
-	HugepageSizeUnit string  `json:"guest_hugepage_size_unit"`
-	HugepageNodeSet  string  `json:"guest_hugepage_node_set"`
-	NetIfs           []NetIf `json:"guest_net_ifs"`
+	Name              string     `json:"name,omitempty"`
+	RootImgPath       string     `json:"root_img_path,omitempty"`
+	ConfigIsoPath     string     `json:"config_iso_path,omitempty"`
+	MemoryMB          int        `json:"guest_memory_mb,omitempty"`
+	NumVcpus          int        `json:"guest_num_vcpus,omitempty"`
+	NumSockets        int        `json:"guest_num_sockets,omitempty"`
+	NumCoresPerSocket int        `json:"guest_num_cores_per_socket,omitempty"`
+	NumThreadsPerCore int        `json:"guest_num_threads_per_core,omitempty"`
+	NUMANodes         []NUMANode `json:"guest_numa_nodes,omitempty"`
+	HugepageSupport   bool       `json:"guest_hugepage_support,omitempty"`
+	HugepageSize      int        `json:"guest_hugepage_size,omitempty"`
+	HugepageSizeUnit  string     `json:"guest_hugepage_size_unit,omitempty"`
+	HugepageNodeSet   string     `json:"guest_hugepage_node_set,omitempty"`
+	NetIfs            []NetIf    `json:"guest_net_ifs,omitempty"`
 }
 
 func createMetaDataFile(path, guest string) error {
@@ -195,92 +209,92 @@ func minusOne(x int) int {
 
 var domTmpl = `
 <domain type='kvm'>
-	<name>{{.Name}}</name>
-  	<!-- uuid>4a9b3f53-fa2a-47f3-a757-dd87720d9d1d</uuid -->
-  	<memory unit='MiB'>{{.MemoryMB}}</memory>
-  	<currentMemory unit='MiB'>{{.MemoryMB}}</currentMemory>
+    <name>{{.Name}}</name>
+    <!-- uuid>4a9b3f53-fa2a-47f3-a757-dd87720d9d1d</uuid -->
+    <memory unit='MiB'>{{.MemoryMB}}</memory>
+    <currentMemory unit='MiB'>{{.MemoryMB}}</currentMemory>
 
-	<!-- hugepages -->
-	{{- if .HugepageSupport}}
-	<memoryBacking>
-	<hugepages>
-		<page size='{{.HugepageSize}}' unit='{{.HugepageSizeUnit}}' nodeset='{{.HugepageNodeSet}}'/>
-	</hugepages>
-	</memoryBacking>
-	{{- end}}
+    <!-- hugepages -->
+    {{- if .HugepageSupport}}
+    <memoryBacking>
+    <hugepages> <page size='{{.HugepageSize}}' unit='{{.HugepageSizeUnit}}' nodeset='{{.HugepageNodeSet}}'/> </hugepages>
+    </memoryBacking>
+    {{- end}}
 
-	<vcpu placement='static'>{{.NumVcpus}}</vcpu>
-	<!-- cputune><shares>4096</shares>
-	<vcpupin vcpu='0' cpuset='4'/>
-	<vcpupin vcpu='1' cpuset='5'/>
-	<emulatorpin cpuset='4,5'/></cputune -->
+    <vcpu placement='static'>{{.NumVcpus}}</vcpu>
+    <!-- example -->
+    <!-- cputune><shares>4096</shares>
+    <vcpupin vcpu='0' cpuset='4'/>
+    <vcpupin vcpu='1' cpuset='5'/>
+    <emulatorpin cpuset='4,5'/></cputune -->
 
-	<os>
+    <os>
     <type arch='x86_64' machine='pc'>hvm</type>
     <boot dev='hd'/>
-  	</os>
-  	<features>
+    </os>
+      
+    <features>
     <acpi/>
     <apic/>
-  	</features>
+    </features>
 
-	<!-- cpu topo -->
-	<cpu mode='host-model'>
-    <model fallback='allow'/>
-    <topology sockets='1' cores='{{.NumVcpus}}' threads='1'/>
-	<numa>
-	<cell id='0' cpus='0-{{.NumVcpus | minusOne}}' memory='{{.MemoryMB}}' unit='MiB' {{if .HugepageSupport}}memAccess='shared'{{end}}/>
-    </numa>
-	</cpu>
+    <!-- cpu topo -->
+    <cpu mode='host-model'>
+        <model fallback='allow'/>
+        <topology sockets='{{.NumSockets}}' cores='{{.NumCoresPerSocket}}' threads='{{.NumThreadsPerCore}}'/>
+        {{- $huge := .HugepageSupport}}
+        
+        <numa>
+            {{- range .NUMANodes}} 
+            <cell id='{{.Id}}' cpus='{{.Cpus}}' memory='{{.MemoryMB}}' unit='MiB' {{if $huge}}memAccess='shared'{{end}}/>
+            {{- end}}
+        </numa>
+    </cpu>
 
-	<on_poweroff>destroy</on_poweroff>
-  	<on_reboot>restart</on_reboot>
-  	<on_crash>destroy</on_crash>
+    <on_poweroff>destroy</on_poweroff>
+    <on_reboot>restart</on_reboot>
+    <on_crash>destroy</on_crash>
 
-	<devices>
-	<emulator>/usr/bin/qemu-system-x86_64</emulator>
-    <!-- emulator>/usr/bin/kvm-spice</emulator -->
+    <devices>
+        <emulator>/usr/bin/qemu-system-x86_64</emulator>
+        <!-- emulator>/usr/bin/kvm-spice</emulator -->
 
-   	<disk type='file' device='disk'>
-	<driver name='qemu' type='qcow2'/>
-	<source file='{{.RootImgPath}}'/>
-	<target dev='vda' bus='virtio'/>
-	<address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x0'/>
-	</disk>
+        <disk type='file' device='disk'>
+        <driver name='qemu' type='qcow2'/>
+        <source file='{{.RootImgPath}}'/>
+        <target dev='vda' bus='virtio'/>
+        <address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x0'/>
+        </disk>
 
-	<disk type='file' device='disk'>
-	<driver name='qemu' type='raw'/>
-	<source file='{{.ConfigIsoPath}}'/>
-	<target dev='vdb' bus='virtio'/>
-	<address type='pci' domain='0x0000' bus='0x00' slot='0x08' function='0x0'/>
-	</disk>
+        <disk type='file' device='disk'>
+        <driver name='qemu' type='raw'/>
+        <source file='{{.ConfigIsoPath}}'/>
+        <target dev='vdb' bus='virtio'/>
+        <address type='pci' domain='0x0000' bus='0x00' slot='0x08' function='0x0'/>
+        </disk>
 
-	<!-- network interfaces -->
-	{{range .NetIfs}} 
-	{{if eq .Type "bridge"}}
-	<interface type='{{.Type}}'>
-	<source bridge='{{.Bridge}}' />
-	<model type='virtio' />
-	</interface>
-	{{ else if eq .Type "vhostuser"}}
-	<interface type='{{.Type}}'>
-	<mac address='{{.MacAddr}}'/>
-	<source type='unix' path='{{.UnixSocketPath}}' mode='client'/>
-	<model type='virtio' />
-	<driver queues='{{.Queues}}'>
-	<host mrg_rxbuf='on'/>
-	</driver>
-	</interface> 
-	{{end}}
-	{{end}}
+        <!-- network interfaces -->
+        {{- range .NetIfs}} 
+        {{- if eq .Type "bridge"}}
+        <interface type='{{.Type}}'>
+            <source bridge='{{.Bridge}}' />
+            <model type='virtio' />
+        </interface>
+        {{- else if eq .Type "vhostuser"}}
+        <interface type='{{.Type}}'>
+            <mac address='{{.MacAddr}}'/>
+            <source type='unix' path='{{.UnixSocketPath}}' mode='client'/>
+            <model type='virtio' />
+            <driver queues='{{.Queues}}'>
+            <host mrg_rxbuf='on'/>
+            </driver>
+        </interface> 
+        {{- end}}
+        {{- end}}
 
- 	<serial type='pty'>
-	<target port='0'/>
-	</serial>
-	<console type='pty'>
-	<target type='serial' port='0'/>
-    </console>
-  	</devices>
+        <serial type='pty'><target port='0'/></serial>
+        <console type='pty'><target type='serial' port='0'/></console>
+    </devices>
 </domain>
 `
 

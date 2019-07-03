@@ -6,12 +6,20 @@ import (
 
 func TestDomXMLStr(t *testing.T) {
 	s := &GuestConf{
-		MemoryMB:         2,
-		NumVcpus:         2,
+		Name:              "foo",
+		MemoryMB:          8192,
+		NumVcpus:          8,
+		NumSockets:        2,
+		NumCoresPerSocket: 2,
+		NumThreadsPerCore: 2,
+		NUMANodes: []NUMANode{
+			{Id: 0, Cpus: "0-3", MemoryMB: 4096},
+			{Id: 1, Cpus: "4-7", MemoryMB: 4096},
+		},
 		HugepageSupport:  true,
 		HugepageSize:     2,
 		HugepageSizeUnit: "MB",
-		HugepageNodeSet:  "0",
+		HugepageNodeSet:  "0,1",
 		RootImgPath:      "foo.img",
 		ConfigIsoPath:    "foo.iso",
 		NetIfs: []NetIf{
