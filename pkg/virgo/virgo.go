@@ -29,8 +29,8 @@ users:
     # this is the outcome of the command openssl passwd -1 -salt SaltSalt $PASSWORD
     passwd: {{.PasswdHash}}
 
-{{- if ne .Provision ""}}	
 write_files: 
+{{- if ne .Provision ""}}	
 - path: /provision.sh
   content: |
     {{.Provision | indentByFour }}
