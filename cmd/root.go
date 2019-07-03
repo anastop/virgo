@@ -36,6 +36,21 @@ JSON file (ignore the '#' lines which serve as comments).
   # LAUNCH OPTIONS
   "guest_memory_mb": 4096,
   "guest_num_vcpus": 8,
+  "guest_num_sockets": 2,
+  "guest_num_cores_per_socket": 2,
+  "guest_num_threads_per_core": 2,
+  "guest_numa_nodes": [
+    {
+      "id": 0,
+      "cpus": "0-3",
+      "memory_mb": 2048
+    },
+    {
+      "id": 1,
+      "cpus": "4-7",
+      "memory_mb": 2048
+    }
+  ],
   "guest_hugepage_support": true,
   "guest_hugepage_size": 2,
   "guest_hugepage_size_unit": "M",
