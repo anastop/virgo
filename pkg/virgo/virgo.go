@@ -29,11 +29,13 @@ users:
     # this is the outcome of the command openssl passwd -1 -salt SaltSalt $PASSWORD
     passwd: {{.PasswdHash}}
 
+{{- if ne .Provision ""}}	
 write_files: 
 - path: /provision.sh
   content: |
     {{.Provision | indentByFour }}
-    
+{{- end}}	
+	
 {{- if ne .Initd "" }}
 - path: /etc/init.d/{{.Name}}
   content: |
@@ -59,7 +61,9 @@ package_upgrade: true
 apt_upgrade: true
 
 runcmd:
+{{- if ne .Provision "" }}
   - bash /provision.sh
+{{- end}}
 {{- if ne .Initd "" }}  
   - chmod +x /etc/init.d/{{.Name}}
   - update-rc.d {{.Name}} defaults

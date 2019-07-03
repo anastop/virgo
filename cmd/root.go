@@ -7,49 +7,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use:   "virgo",
-	Short: "virgo enables easy provisioning, configuration and management of Libvirt guests",
-	Long: `virgo enables easy provisioning, configuration and management of Libvirt guests. 
-
-All virgo commands accept a single argument, the name of the VM they act upon. Every command
-has its own flags. 
-
-For provisioning a new VM image, you should specify a JSON config file with provisioning
-options, along with a provisioning script to be executed on image's first boot.
-
-For launching a new VM instance from an already-provisioned image, you should specify a 
-JSON config file with launch options. 
-
-The example below shows all available provisioning and launch options, all in a single
-JSON file (ignore the '#' lines which serve as comments). 
-
+var sampleConfig = `
 {
-  # PROVISIONING OPTIONS
-  "cloud_img_url": "https://cloud-images.ubuntu.com/releases/16.04/release/",
-  "cloud_img_name": "ubuntu-16.04-server-cloudimg-amd64-disk1.img",
-  "user": "nfvsap",
-  "passwd": "nfvsap",
+  "cloud_img_url": "https://cloud-images.ubuntu.com/releases/18.04/release/",
+  "cloud_img_name": "ubuntu-18.04-server-cloudimg-amd64.img",
+  "user": "guest",
+  "passwd": "guest",
   "root_img_gb": 10,
 
-  # LAUNCH OPTIONS
   "guest_memory_mb": 4096,
   "guest_num_vcpus": 8,
   "guest_num_sockets": 2,
   "guest_num_cores_per_socket": 2,
   "guest_num_threads_per_core": 2,
-  "guest_numa_nodes": [
-    {
-      "id": 0,
-      "cpus": "0-3",
-      "memory_mb": 2048
-    },
-    {
-      "id": 1,
-      "cpus": "4-7",
-      "memory_mb": 2048
-    }
+  "guest_numa_nodes": [ 
+    {"id": 0, "cpus": "0-3", "memory_mb": 2048 },
+    {"id": 1, "cpus": "4-7", "memory_mb": 2048 }
   ],
   "guest_hugepage_support": true,
   "guest_hugepage_size": 2,
@@ -71,6 +44,27 @@ JSON file (ignore the '#' lines which serve as comments).
       "queues": 2
     }]
 }
+`
+
+// rootCmd represents the base command when called without any subcommands
+var rootCmd = &cobra.Command{
+	Use:   "virgo",
+	Short: "virgo enables easy provisioning, configuration and management of Libvirt guests",
+	Long: `virgo enables easy provisioning, configuration and management of Libvirt guests. 
+
+Most virgo commands accept a single argument, the name of the VM they act upon. Every command
+has its own flags. 
+
+For provisioning a new VM image, you should specify a JSON config file with provisioning
+options, along with a provisioning script to be executed on image's first boot.
+
+For launching a new VM instance from an already-provisioned image, you should specify a 
+JSON config file with launch options. 
+
+The example below shows all available provisioning and launch options (separated by whitespace), 
+all in a single JSON file.
+
+` + sampleConfig + `
 
 The provisioning script can be any valid bash script, and it's executed as the 
 last step of cloud-init provisioning. 
