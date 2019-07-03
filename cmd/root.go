@@ -56,13 +56,14 @@ Most virgo commands accept a single argument, the name of the VM they act upon. 
 has its own flags. 
 
 For provisioning a new VM image, you should specify a JSON config file with provisioning
-options, along with a provisioning script to be executed on image's first boot.
+options. Additionally, you may specify a provisioning script to be executed on image's first boot,
+and/or an initd script with commands to be executed on every boot. 
 
 For launching a new VM instance from an already-provisioned image, you should specify a 
 JSON config file with launch options. 
 
-The example below shows all available provisioning and launch options (separated by whitespace), 
-all in a single JSON file.
+The example below shows all available provisioning and launch options, all in a single JSON file
+(these groups of options are separated by an empty line).
 
 ` + sampleConfig + `
 
