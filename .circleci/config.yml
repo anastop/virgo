@@ -27,10 +27,15 @@ workflows:
   version: 2
   untagged-build:
     jobs:
-      - build        
+      - build:        
+          filters:
+            tags:
+              only: /^v.*/
   tagged-build:
     jobs:
       - release:
           filters:
             tags:
               only: /^v.*/
+            branches:
+              ignore: /.*/
