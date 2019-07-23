@@ -11,7 +11,7 @@ jobs:
         - run: |
             go build ./...
 
-  release-build:
+  release:
       working_directory: /virgo
       docker:
         - image: golang:1.12.7-stretch
@@ -19,23 +19,18 @@ jobs:
         - checkout
         - run: |
             go build ./...
-            mv virgo virgo-$CIRCLE_TAG
-            go run github.com/tcnksm/ghr -replace -token ed25266b85a37f0e84e44700ef5f067c081c6f0b -username anastop -repository virgo $CIRCLE_TAG virgo-$CIRCLE_TAG
+            mv $CIRCLE_WORKING_DIRECTORY/virgo $CIRCLE_WORKING_DIRECTORY/virgo-$CIRCLE_TAG
+            go run github.com/tcnksm/ghr -replace -token ed25266b85a37f0e84e44700ef5f067c081c6f0b -username anastop -repository virgo $CIRCLE_TAG $CIRCLE_WORKING_DIRECTORY/virgo-$CIRCLE_TAG
             
 
 workflows:
   version: 2
-  build-workflow:
+  untagged-build:
     jobs:
-      - build:
+      - build        
+  tagged-build:
+    jobs:
+      - release:
           filters:
             tags:
               only: /^v.*/
-      - release-build:
-          requires:
-            - build
-          filters:
-            tags:
-              only: /^v.*/
-            branches:
-              ignore: /.*/
