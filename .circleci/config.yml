@@ -18,11 +18,9 @@ jobs:
       steps:
         - checkout
         - run: |
-            go build ./...
-            pwd
-            ls
-            mv $CIRCLE_WORKING_DIRECTORY/virgo $CIRCLE_WORKING_DIRECTORY/virgo-$CIRCLE_TAG
-            go run github.com/tcnksm/ghr -replace -token ed25266b85a37f0e84e44700ef5f067c081c6f0b -username anastop -repository virgo $CIRCLE_TAG $CIRCLE_WORKING_DIRECTORY/virgo-$CIRCLE_TAG
+            go build 
+            mv virgo virgo-$CIRCLE_TAG
+            go run github.com/tcnksm/ghr -replace -token ed25266b85a37f0e84e44700ef5f067c081c6f0b -username anastop -repository virgo $CIRCLE_TAG virgo-$CIRCLE_TAG
             
 
 workflows:
